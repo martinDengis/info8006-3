@@ -223,6 +223,21 @@ class PacmanAgent(Agent):
 
     def __init__(self):
         super().__init__()
+
+    def identify_target_ghost(self, beliefs, eaten):
+        # Initialize target position and highest probability
+        target_position = None
+        highest_prob = 0
+
+        # Iterate over each belief state and eaten status
+        for belief, ghost_eaten in zip(beliefs, eaten):
+            if not ghost_eaten:  # Only consider ghosts that have not been eaten
+                current_max_prob = np.max(belief)
+                if current_max_prob > highest_prob:
+                    highest_prob = current_max_prob
+                    target_position = np.unravel_index(np.argmax(belief), belief.shape)
+
+        return target_position
     
     def identify_target_zone(self, beliefs, eaten, walls, pacman_position):
         # Initialize target zone and highest probability
@@ -235,33 +250,39 @@ class PacmanAgent(Agent):
             if not ghost_eaten:
                 ghost_position = np.unravel_index(np.argmax(belief), belief.shape)
                 positions.append(ghost_position)
-        
-        min_distance = float('inf')
-        for position in positions:
-            distance = manhattanDistance(position, pacman_position)
-            if distance < min_distance:
-                min_distance = distance
-                closest_ghost = position
+                
+        midpoint = self.find_midpoint(positions)
+        midpoint_x, midpoint_y = midpoint
 
-        ghost_x, ghost_y = closest_ghost
-
-        x_diff = ghost_x - pacman_x
-        y_diff = ghost_y - pacman_y
+        x_diff = midpoint_x - pacman_x
+        y_diff = midpoint_y - pacman_y
 
         if abs(x_diff) > abs(y_diff):
             target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
             if not self.is_legal_move(pacman_position, target_zone, walls):
                 target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
                 if not self.is_legal_move(pacman_position, target_zone, walls):
-                    target_zone = self.choose_random_move(pacman_position, walls)
+                    target_zone = Directions.STOP
         else:
             target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
             if not self.is_legal_move(pacman_position, target_zone, walls):
                 target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
                 if not self.is_legal_move(pacman_position, target_zone, walls):
-                    target_zone = self.choose_random_move(pacman_position, walls)
+                    target_zone = Directions.STOP
 
         return target_zone
+
+    def find_midpoint(self, points):
+        n = len(points)
+        
+        if n == 0:
+            return None  # No points to find midpoint
+        
+        # Calculate the average of x-coordinates and y-coordinates
+        avg_x = sum(point[0] for point in points) / n
+        avg_y = sum(point[1] for point in points) / n
+        
+        return (avg_x, avg_y)
     
     def is_legal_move(self, position, action, walls):
         # Calculate new position based on action
@@ -281,14 +302,24 @@ class PacmanAgent(Agent):
         if not walls[new_x][new_y]:
             return True
         return False
-    
-    def choose_random_move(self, position, walls):
-        possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
-        action = random.choice(possible_actions)
-        while not self.is_legal_move(position, action, walls):
-            action = random.choice(possible_actions)
 
-        return action
+    def get_new_position(self, position, action, walls):
+        # Calculate new position based on action
+        direction_deltas = {
+            Directions.NORTH: (0, 1),
+            Directions.SOUTH: (0, -1),
+            Directions.EAST: (1, 0),
+            Directions.WEST: (-1, 0)
+        }
+
+        # Calculate new position based on action
+        x, y = position
+        dx, dy = direction_deltas.get(action, (0, 0))
+        new_x, new_y = x + dx, y + dy
+
+        if not walls[new_x][new_y]:
+            return (new_x, new_y)
+        return None
 
     def _get_action(self, walls, beliefs, eaten, position):
         """
@@ -301,7 +332,33 @@ class PacmanAgent(Agent):
         Returns:
             A legal move as defined in `game.Directions`.
         """
+
+        # possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+
+        # best_action = Directions.STOP
+        # shortest_distance = float('inf')
         best_action = self.identify_target_zone(beliefs, eaten, walls, position)
+
+        # # Identify the most probable ghost position
+        # target_ghost_position = self.identify_target_ghost(beliefs, eaten)
+
+        # for action in possible_actions:
+        #     new_position = self.get_new_position(position, action, walls)
+        #     if new_position is None or target_ghost_position is None:
+        #         # Choose the direction with the highest density of non-eaten ghosts
+        #         best_action = self.identify_target_zone(beliefs, eaten, position)
+        #     else:
+        #         # Calculate the Manhattan distance to the target ghost
+        #         distance = manhattanDistance(new_position, target_ghost_position)
+                
+        #         print(f"Action: {action}, New Position: {new_position}, Distance to Target: {distance}")
+
+        #         # Choose the action that minimizes the distance
+        #         if distance < shortest_distance:
+        #             shortest_distance = distance
+        #             best_action = action
+
+        # print("Chosen Action:", best_action)
 
         return best_action
 
