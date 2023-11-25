@@ -273,10 +273,10 @@ class PacmanAgent(Agent):
         if target_zone == self.last_target_zone and target_zone == Directions.STOP:
             self.stopCount += 1
         elif target_zone == Directions.STOP:
-            self.stopCount = 1  # Reset the counter if the target_zone changes
+            self.stopCount = 1 # first consecutive stop
             self.last_target_zone = target_zone
         else:
-            self.stopCount = 0
+            self.stopCount = 0 # Reset the counter if the target_zone changes
             self.last_target_zone = target_zone
 
         if self.stopCount == 5:
@@ -289,7 +289,6 @@ class PacmanAgent(Agent):
                     target_zone = self.choose_direction(pacman_position, walls)
 
         return target_zone
-
     
     def is_legal_move(self, position, action, walls):
         # Calculate new position based on action
