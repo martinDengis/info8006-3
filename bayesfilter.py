@@ -77,7 +77,7 @@ class BeliefStateAgent(Agent):
 
                     if self.ghost == 'afraid' or self.ghost == 'terrified':
                         # Higher probability for increasing distance from Pacman
-                        prob_distribution[idx] = new_distance - current_distance
+                        prob_distribution[idx] = current_distance - new_distance 
                     else:
                         # Equal probability for Fearless ghost
                         prob_distribution[idx] = 1
@@ -281,12 +281,12 @@ class PacmanAgent(Agent):
 
         if self.stopCount == 5:
             if not self.saved_moves:
-                # If no saved moves, compute a new path and save the first 15 moves
-                self.saved_moves = self.compute_path(pacman_position, walls, closest_ghost)
+                # If no saved moves, compute a new path and save the first 25 moves
+                self.saved_moves = self.compute_path(pacman_position, walls, closest_ghost)[:25]
                 if self.saved_moves:
                     target_zone = self.saved_moves.pop(0)
                 else:
-                    target_zone = Directions.STOP
+                    target_zone = self.choose_direction(pacman_position, walls)
 
         return target_zone
 
@@ -309,13 +309,11 @@ class PacmanAgent(Agent):
             return True
         return False
 
-    # def choose_random_move(self, position, walls):
-    #     possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
-    #     action = random.choice(possible_actions)
-    #     while not self.is_legal_move(position, action, walls):
-    #         action = random.choice(possible_actions)
-
-    #     return action
+    def choose_direction(self, position, walls):
+        possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+        for action in possible_actions:
+            if self.is_legal_move(position, action, walls):
+                return action
     
     def compute_path(self, start, walls, goal):
         """
@@ -327,7 +325,7 @@ class PacmanAgent(Agent):
             goal: The goal position (x, y).
 
         Returns:
-            A list of the first 25 moves (game.Directions) representing the computed path.
+            A list of the first 20 moves (game.Directions) representing the computed path.
         """
         visited = set()
         queue = Queue()
@@ -337,8 +335,7 @@ class PacmanAgent(Agent):
             current, path = queue.pop()
 
             if current == goal:
-                # Path found, return the first 25 moves
-                return path[:25]
+                return path
 
             if current in visited:
                 continue
@@ -396,21 +393,6 @@ class PacmanAgent(Agent):
         new_position = (position[0] + dx, position[1] + dy)
 
         return new_position
-    
-    def get_move_to_reach(self, current, previous):
-        x_diff = current[0] - previous[0]
-        y_diff = current[1] - previous[1]
-
-        if x_diff > 0:
-            return Directions.EAST
-        elif x_diff < 0:
-            return Directions.WEST
-        elif y_diff > 0:
-            return Directions.NORTH
-        elif y_diff < 0:
-            return Directions.SOUTH
-        else:
-            return Directions.STOP
 
     def _get_action(self, walls, beliefs, eaten, position):
         """

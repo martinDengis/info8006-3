@@ -13,8 +13,9 @@ with open('game_results.txt', 'w') as results_file:
         for layout in layouts:
             for num_ghosts in num_ghosts_options:
                 # Construct the command
-                command = f'python run.py --ghost {ghost_type} --nghosts {num_ghosts} --layout {layout} --seed 42'
-                
+                command = f'python run.py --ghost {ghost_type} --nghosts {num_ghosts} --visible --layout {layout} --seed 42'
+                print(command)
+
                 # Write the configuration title
                 config_title = f'Configuration: Ghost Type: {ghost_type}, Number of Ghosts: {num_ghosts}, Layout: {layout}'
                 results_file.write(config_title + '\n')
