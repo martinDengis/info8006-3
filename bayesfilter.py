@@ -2,6 +2,7 @@ import random
 import numpy as np
 
 from pacman_module.game import Agent, Directions, manhattanDistance
+from pacman_module.util import Queue
 
 def binomial_coefficient(n, k):
     """
@@ -223,8 +224,16 @@ class PacmanAgent(Agent):
 
     def __init__(self):
         super().__init__()
-    
+        self.stopCount = 0
+        self.saved_moves = []
+        self.last_target_zone = None
+
     def identify_target_zone(self, beliefs, eaten, walls, pacman_position):
+        if self.saved_moves:
+            # If saved moves are available, use them
+            self.stopCount = 0
+            return self.saved_moves.pop(0)
+        
         # Initialize target zone and highest probability
         positions = []
         target_zone = None
@@ -235,14 +244,14 @@ class PacmanAgent(Agent):
             if not ghost_eaten:
                 ghost_position = np.unravel_index(np.argmax(belief), belief.shape)
                 positions.append(ghost_position)
-        
+
         min_distance = float('inf')
         for position in positions:
             distance = manhattanDistance(position, pacman_position)
             if distance < min_distance:
                 min_distance = distance
                 closest_ghost = position
-
+        
         ghost_x, ghost_y = closest_ghost
 
         x_diff = ghost_x - pacman_x
@@ -253,15 +262,34 @@ class PacmanAgent(Agent):
             if not self.is_legal_move(pacman_position, target_zone, walls):
                 target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
                 if not self.is_legal_move(pacman_position, target_zone, walls):
-                    target_zone = self.choose_random_move(pacman_position, walls)
+                    target_zone = Directions.STOP
         else:
             target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
             if not self.is_legal_move(pacman_position, target_zone, walls):
                 target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
                 if not self.is_legal_move(pacman_position, target_zone, walls):
-                    target_zone = self.choose_random_move(pacman_position, walls)
+                    target_zone = Directions.STOP
+
+        if target_zone == self.last_target_zone and target_zone == Directions.STOP:
+            self.stopCount += 1
+        elif target_zone == Directions.STOP:
+            self.stopCount = 1  # Reset the counter if the target_zone changes
+            self.last_target_zone = target_zone
+        else:
+            self.stopCount = 0
+            self.last_target_zone = target_zone
+
+        if self.stopCount == 5:
+            if not self.saved_moves:
+                # If no saved moves, compute a new path and save the first 15 moves
+                self.saved_moves = self.compute_path(pacman_position, walls, closest_ghost)
+                if self.saved_moves:
+                    target_zone = self.saved_moves.pop(0)
+                else:
+                    target_zone = Directions.STOP
 
         return target_zone
+
     
     def is_legal_move(self, position, action, walls):
         # Calculate new position based on action
@@ -276,19 +304,113 @@ class PacmanAgent(Agent):
         x, y = position
         dx, dy = direction_deltas.get(action, (0, 0))
         new_x, new_y = x + dx, y + dy
-        new_x, new_y = x + dx, y + dy
 
         if not walls[new_x][new_y]:
             return True
         return False
-    
-    def choose_random_move(self, position, walls):
-        possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
-        action = random.choice(possible_actions)
-        while not self.is_legal_move(position, action, walls):
-            action = random.choice(possible_actions)
 
-        return action
+    # def choose_random_move(self, position, walls):
+    #     possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+    #     action = random.choice(possible_actions)
+    #     while not self.is_legal_move(position, action, walls):
+    #         action = random.choice(possible_actions)
+
+    #     return action
+    
+    def compute_path(self, start, walls, goal):
+        """
+        Computes the first possible path from the start position to the goal position.
+
+        Arguments:
+            start: The starting position (x, y).
+            walls: The W x H grid of walls.
+            goal: The goal position (x, y).
+
+        Returns:
+            A list of the first 25 moves (game.Directions) representing the computed path.
+        """
+        visited = set()
+        queue = Queue()
+        queue.push((start, []))
+
+        while not queue.isEmpty():
+            current, path = queue.pop()
+
+            if current == goal:
+                # Path found, return the first 25 moves
+                return path[:25]
+
+            if current in visited:
+                continue
+
+            visited.add(current)
+
+            # Add neighbors to the queue
+            neighbors = self.get_valid_neighbors(current, walls)
+            for neighbor, move in neighbors:
+                queue.push((neighbor, path + [move]))
+
+        # If no path found, return an empty list
+        return []
+
+    def get_valid_neighbors(self, position, walls):
+        """
+        Get valid neighbors of a given position.
+
+        Arguments:
+            position: The current position (x, y).
+            walls: The W x H grid of walls.
+
+        Returns:
+            A list of valid neighbors as tuples (neighbor_position, move).
+        """
+        neighbors = []
+
+        for move in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            new_position = self.calculate_new_position(position, move)
+
+            if not walls[new_position[0]][new_position[1]]:
+                neighbors.append((new_position, move))
+
+        return neighbors
+
+    def calculate_new_position(self, position, move):
+        """
+        Calculate the new position based on the current position and a move.
+
+        Arguments:
+            position: The current position (x, y).
+            move: The move (game.Directions).
+
+        Returns:
+            The new position as a tuple (x, y).
+        """
+        direction_deltas = {
+            Directions.NORTH: (0, 1),
+            Directions.SOUTH: (0, -1),
+            Directions.EAST: (1, 0),
+            Directions.WEST: (-1, 0)
+        }
+
+        dx, dy = direction_deltas.get(move, (0, 0))
+        new_position = (position[0] + dx, position[1] + dy)
+
+        return new_position
+    
+    def get_move_to_reach(self, current, previous):
+        x_diff = current[0] - previous[0]
+        y_diff = current[1] - previous[1]
+
+        if x_diff > 0:
+            return Directions.EAST
+        elif x_diff < 0:
+            return Directions.WEST
+        elif y_diff > 0:
+            return Directions.NORTH
+        elif y_diff < 0:
+            return Directions.SOUTH
+        else:
+            return Directions.STOP
 
     def _get_action(self, walls, beliefs, eaten, position):
         """
