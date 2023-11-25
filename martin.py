@@ -2,6 +2,7 @@ import random
 import numpy as np
 
 from pacman_module.game import Agent, Directions, manhattanDistance
+from pacman_module.util import Queue
 
 def binomial_coefficient(n, k):
     """
@@ -76,7 +77,7 @@ class BeliefStateAgent(Agent):
 
                     if self.ghost == 'afraid' or self.ghost == 'terrified':
                         # Higher probability for increasing distance from Pacman
-                        prob_distribution[idx] = new_distance - current_distance
+                        prob_distribution[idx] = current_distance - new_distance 
                     else:
                         # Equal probability for Fearless ghost
                         prob_distribution[idx] = 1
@@ -223,23 +224,16 @@ class PacmanAgent(Agent):
 
     def __init__(self):
         super().__init__()
+        self.stopCount = 0
+        self.saved_moves = []
+        self.last_target_zone = None
 
-    def identify_target_ghost(self, beliefs, eaten):
-        # Initialize target position and highest probability
-        target_position = None
-        highest_prob = 0
-
-        # Iterate over each belief state and eaten status
-        for belief, ghost_eaten in zip(beliefs, eaten):
-            if not ghost_eaten:  # Only consider ghosts that have not been eaten
-                current_max_prob = np.max(belief)
-                if current_max_prob > highest_prob:
-                    highest_prob = current_max_prob
-                    target_position = np.unravel_index(np.argmax(belief), belief.shape)
-
-        return target_position
-    
     def identify_target_zone(self, beliefs, eaten, walls, pacman_position):
+        if self.saved_moves:
+            # If saved moves are available, use them
+            self.stopCount = 0
+            return self.saved_moves.pop(0)
+        
         # Initialize target zone and highest probability
         positions = []
         target_zone = None
@@ -250,12 +244,18 @@ class PacmanAgent(Agent):
             if not ghost_eaten:
                 ghost_position = np.unravel_index(np.argmax(belief), belief.shape)
                 positions.append(ghost_position)
-                
-        midpoint = self.find_midpoint(positions)
-        midpoint_x, midpoint_y = midpoint
 
-        x_diff = midpoint_x - pacman_x
-        y_diff = midpoint_y - pacman_y
+        min_distance = float('inf')
+        for position in positions:
+            distance = manhattanDistance(position, pacman_position)
+            if distance < min_distance:
+                min_distance = distance
+                closest_ghost = position
+        
+        ghost_x, ghost_y = closest_ghost
+
+        x_diff = ghost_x - pacman_x
+        y_diff = ghost_y - pacman_y
 
         if abs(x_diff) > abs(y_diff):
             target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
@@ -270,19 +270,25 @@ class PacmanAgent(Agent):
                 if not self.is_legal_move(pacman_position, target_zone, walls):
                     target_zone = Directions.STOP
 
-        return target_zone
+        if target_zone == self.last_target_zone and target_zone == Directions.STOP:
+            self.stopCount += 1
+        elif target_zone == Directions.STOP:
+            self.stopCount = 1 # first consecutive stop
+            self.last_target_zone = target_zone
+        else:
+            self.stopCount = 0 # Reset the counter if the target_zone changes
+            self.last_target_zone = target_zone
 
-    def find_midpoint(self, points):
-        n = len(points)
-        
-        if n == 0:
-            return None  # No points to find midpoint
-        
-        # Calculate the average of x-coordinates and y-coordinates
-        avg_x = sum(point[0] for point in points) / n
-        avg_y = sum(point[1] for point in points) / n
-        
-        return (avg_x, avg_y)
+        if self.stopCount == 5:
+            if not self.saved_moves:
+                # If no saved moves, compute a new path and save the first 25 moves
+                self.saved_moves = self.compute_path(pacman_position, walls, closest_ghost)[:25]
+                if self.saved_moves:
+                    target_zone = self.saved_moves.pop(0)
+                else:
+                    target_zone = self.choose_direction(pacman_position, walls)
+
+        return target_zone
     
     def is_legal_move(self, position, action, walls):
         # Calculate new position based on action
@@ -297,14 +303,84 @@ class PacmanAgent(Agent):
         x, y = position
         dx, dy = direction_deltas.get(action, (0, 0))
         new_x, new_y = x + dx, y + dy
-        new_x, new_y = x + dx, y + dy
 
         if not walls[new_x][new_y]:
             return True
         return False
 
-    def get_new_position(self, position, action, walls):
-        # Calculate new position based on action
+    def choose_direction(self, position, walls):
+        possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+        for action in possible_actions:
+            if self.is_legal_move(position, action, walls):
+                return action
+    
+    def compute_path(self, start, walls, goal):
+        """
+        Computes the first possible path from the start position to the goal position.
+
+        Arguments:
+            start: The starting position (x, y).
+            walls: The W x H grid of walls.
+            goal: The goal position (x, y).
+
+        Returns:
+            A list of the first 20 moves (game.Directions) representing the computed path.
+        """
+        visited = set()
+        queue = Queue()
+        queue.push((start, []))
+
+        while not queue.isEmpty():
+            current, path = queue.pop()
+
+            if current == goal:
+                return path
+
+            if current in visited:
+                continue
+
+            visited.add(current)
+
+            # Add neighbors to the queue
+            neighbors = self.get_valid_neighbors(current, walls)
+            for neighbor, move in neighbors:
+                queue.push((neighbor, path + [move]))
+
+        # If no path found, return an empty list
+        return []
+
+    def get_valid_neighbors(self, position, walls):
+        """
+        Get valid neighbors of a given position.
+
+        Arguments:
+            position: The current position (x, y).
+            walls: The W x H grid of walls.
+
+        Returns:
+            A list of valid neighbors as tuples (neighbor_position, move).
+        """
+        neighbors = []
+
+        for move in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            new_position = self.calculate_new_position(position, move)
+
+            if not walls[new_position[0]][new_position[1]]:
+                neighbors.append((new_position, move))
+
+        return neighbors
+
+    def calculate_new_position(self, position, move):
+        """
+        Calculate the new position based on the current position and a move.
+
+        Arguments:
+            position: The current position (x, y).
+            move: The move (game.Directions).
+
+        Returns:
+            The new position as a tuple (x, y).
+        """
         direction_deltas = {
             Directions.NORTH: (0, 1),
             Directions.SOUTH: (0, -1),
@@ -312,14 +388,10 @@ class PacmanAgent(Agent):
             Directions.WEST: (-1, 0)
         }
 
-        # Calculate new position based on action
-        x, y = position
-        dx, dy = direction_deltas.get(action, (0, 0))
-        new_x, new_y = x + dx, y + dy
+        dx, dy = direction_deltas.get(move, (0, 0))
+        new_position = (position[0] + dx, position[1] + dy)
 
-        if not walls[new_x][new_y]:
-            return (new_x, new_y)
-        return None
+        return new_position
 
     def _get_action(self, walls, beliefs, eaten, position):
         """
@@ -332,33 +404,7 @@ class PacmanAgent(Agent):
         Returns:
             A legal move as defined in `game.Directions`.
         """
-
-        # possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
-
-        # best_action = Directions.STOP
-        # shortest_distance = float('inf')
         best_action = self.identify_target_zone(beliefs, eaten, walls, position)
-
-        # # Identify the most probable ghost position
-        # target_ghost_position = self.identify_target_ghost(beliefs, eaten)
-
-        # for action in possible_actions:
-        #     new_position = self.get_new_position(position, action, walls)
-        #     if new_position is None or target_ghost_position is None:
-        #         # Choose the direction with the highest density of non-eaten ghosts
-        #         best_action = self.identify_target_zone(beliefs, eaten, position)
-        #     else:
-        #         # Calculate the Manhattan distance to the target ghost
-        #         distance = manhattanDistance(new_position, target_ghost_position)
-                
-        #         print(f"Action: {action}, New Position: {new_position}, Distance to Target: {distance}")
-
-        #         # Choose the action that minimizes the distance
-        #         if distance < shortest_distance:
-        #             shortest_distance = distance
-        #             best_action = action
-
-        # print("Chosen Action:", best_action)
 
         return best_action
 
