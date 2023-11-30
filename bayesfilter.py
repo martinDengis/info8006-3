@@ -1,8 +1,8 @@
-import random
 import numpy as np
 
 from pacman_module.game import Agent, Directions, manhattanDistance
 from pacman_module.util import Queue
+
 
 def binomial_coefficient(n, k):
     """
@@ -19,11 +19,13 @@ def binomial_coefficient(n, k):
         coeff //= i + 1
     return coeff
 
+
 def binomial_pmf(k, n, p):
     """
     Calculate the probability mass function of a binomial distribution.
     """
     return binomial_coefficient(n, k) * (p ** k) * ((1 - p) ** (n - k))
+
 
 class BeliefStateAgent(Agent):
     """Belief state agent.
@@ -66,7 +68,9 @@ class BeliefStateAgent(Agent):
                 # Check all possible moves (up, down, left, right, stay)
                 for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0), (0, 0)]:
                     new_x, new_y = i + dx, j + dy
-                    if 0 <= new_x < width and 0 <= new_y < height and not walls[new_x][new_y]:
+                    if (0 <= new_x < width and
+                            0 <= new_y < height and
+                            not walls[new_x][new_y]):
                         valid_moves.append((new_x, new_y))
 
                 # Calculate probabilities based on ghost type
@@ -76,8 +80,8 @@ class BeliefStateAgent(Agent):
                     current_distance = manhattanDistance((i, j), position)
 
                     if self.ghost == 'afraid' or self.ghost == 'terrified':
-                        # Higher probability for increasing distance from Pacman
-                        prob_distribution[idx] = current_distance - new_distance 
+                        # Higher probability for increasing distance
+                        prob_distribution[idx] = current_distance-new_distance
                     else:
                         # Equal probability for Fearless ghost
                         prob_distribution[idx] = 1
@@ -86,8 +90,9 @@ class BeliefStateAgent(Agent):
                 if np.sum(prob_distribution) > 0:
                     prob_distribution /= np.sum(prob_distribution)
                 else:
-                    prob_distribution = np.ones(len(valid_moves)) / len(valid_moves)  # Equal distribution if no preferred move
-
+                    # Equal distribution if no preferred move
+                    num_moves = len(valid_moves)
+                    prob_distribution = np.ones(num_moves) / num_moves
                 # Assign probabilities to the transition matrix
                 for idx, (new_x, new_y) in enumerate(valid_moves):
                     T[i, j, new_x, new_y] = prob_distribution[idx]
@@ -183,6 +188,7 @@ class BeliefStateAgent(Agent):
         if total_belief > 0:
             updated_belief /= total_belief
 
+        # print("Updated Belief State:\n", updated_belief)
         return updated_belief
 
     def get_action(self, state):
@@ -233,7 +239,6 @@ class PacmanAgent(Agent):
             # If saved moves are available, use them
             self.stopCount = 0
             return self.saved_moves.pop(0)
-        
         # Initialize target zone and highest probability
         positions = []
         target_zone = None
@@ -242,7 +247,8 @@ class PacmanAgent(Agent):
 
         for belief, ghost_eaten in zip(beliefs, eaten):
             if not ghost_eaten:
-                ghost_position = np.unravel_index(np.argmax(belief), belief.shape)
+                ghost_position = np.unravel_index(
+                    np.argmax(belief), belief.shape)
                 positions.append(ghost_position)
 
         min_distance = float('inf')
@@ -251,7 +257,6 @@ class PacmanAgent(Agent):
             if distance < min_distance:
                 min_distance = distance
                 closest_ghost = position
-        
         ghost_x, ghost_y = closest_ghost
 
         x_diff = ghost_x - pacman_x
@@ -260,36 +265,40 @@ class PacmanAgent(Agent):
         if abs(x_diff) > abs(y_diff):
             target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
             if not self.is_legal_move(pacman_position, target_zone, walls):
-                target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
+                target_zone = (Directions.NORTH if y_diff > 0
+                               else Directions.SOUTH)
                 if not self.is_legal_move(pacman_position, target_zone, walls):
                     target_zone = Directions.STOP
         else:
             target_zone = Directions.NORTH if y_diff > 0 else Directions.SOUTH
             if not self.is_legal_move(pacman_position, target_zone, walls):
-                target_zone = Directions.EAST if x_diff > 0 else Directions.WEST
+                target_zone = (Directions.EAST if x_diff > 0
+                               else Directions.WEST)
                 if not self.is_legal_move(pacman_position, target_zone, walls):
                     target_zone = Directions.STOP
 
-        if target_zone == self.last_target_zone and target_zone == Directions.STOP:
+        if (target_zone == self.last_target_zone and
+                target_zone == Directions.STOP):
             self.stopCount += 1
         elif target_zone == Directions.STOP:
-            self.stopCount = 1 # first consecutive stop
+            self.stopCount = 1  # first consecutive stop
             self.last_target_zone = target_zone
         else:
-            self.stopCount = 0 # Reset the counter if the target_zone changes
+            self.stopCount = 0  # Reset the counter if the target_zone changes
             self.last_target_zone = target_zone
 
         if self.stopCount == 5:
             if not self.saved_moves:
-                # If no saved moves, compute a new path and save the first 25 moves
-                self.saved_moves = self.compute_path(pacman_position, walls, closest_ghost)[:25]
+                # If no saved moves, compute new path + save the first 25 moves
+                self.saved_moves = self.compute_path(
+                    pacman_position, walls, closest_ghost)[:25]
                 if self.saved_moves:
                     target_zone = self.saved_moves.pop(0)
                 else:
                     target_zone = self.choose_direction(pacman_position, walls)
 
         return target_zone
-    
+
     def is_legal_move(self, position, action, walls):
         # Calculate new position based on action
         direction_deltas = {
@@ -309,14 +318,16 @@ class PacmanAgent(Agent):
         return False
 
     def choose_direction(self, position, walls):
-        possible_actions = [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]
+        possible_actions = [Directions.NORTH, Directions.SOUTH,
+                            Directions.EAST, Directions.WEST]
         for action in possible_actions:
             if self.is_legal_move(position, action, walls):
                 return action
-    
+
     def compute_path(self, start, walls, goal):
         """
-        Computes the first possible path from the start position to the goal position.
+        Computes the first possible path from the
+        start position to the goal position.
 
         Arguments:
             start: The starting position (x, y).
@@ -324,7 +335,8 @@ class PacmanAgent(Agent):
             goal: The goal position (x, y).
 
         Returns:
-            A list of the first 20 moves (game.Directions) representing the computed path.
+            A list of the first 20 moves (game.Directions)
+            representing the computed path.
         """
         visited = set()
         queue = Queue()
@@ -362,7 +374,8 @@ class PacmanAgent(Agent):
         """
         neighbors = []
 
-        for move in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+        for move in [Directions.NORTH, Directions.SOUTH,
+                     Directions.EAST, Directions.WEST]:
             new_position = self.calculate_new_position(position, move)
 
             if not walls[new_position[0]][new_position[1]]:
@@ -404,7 +417,8 @@ class PacmanAgent(Agent):
         Returns:
             A legal move as defined in `game.Directions`.
         """
-        best_action = self.identify_target_zone(beliefs, eaten, walls, position)
+        best_action = self.identify_target_zone(beliefs,
+                                                eaten, walls, position)
 
         return best_action
 

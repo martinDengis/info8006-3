@@ -1,0 +1,6 @@
+# Ignore files from _pycache_ and pacman_modules
+_pycache_
+pacman_modules
+
+# Ignore all .pyc files
+*.pyc
