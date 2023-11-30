@@ -81,7 +81,9 @@ class BeliefStateAgent(Agent):
 
                     if self.ghost == 'afraid' or self.ghost == 'terrified':
                         # Higher probability for increasing distance
-                        prob_distribution[idx] = current_distance-new_distance
+                        distance_diff = new_distance - current_distance
+                        scaling_factor = 1.0  # Adjust the scaling factor as needed
+                        prob_distribution[idx] = np.exp(scaling_factor * distance_diff)                    
                     else:
                         # Equal probability for Fearless ghost
                         prob_distribution[idx] = 1
@@ -96,6 +98,8 @@ class BeliefStateAgent(Agent):
                 # Assign probabilities to the transition matrix
                 for idx, (new_x, new_y) in enumerate(valid_moves):
                     T[i, j, new_x, new_y] = prob_distribution[idx]
+        if np.any(T < 0) or np.any(T > 1):
+            print("Invalid values in Transition Matrix (T):\n", T)
 
         return T
 
@@ -142,6 +146,9 @@ class BeliefStateAgent(Agent):
 
                 O[i, j] = probability
 
+        if np.any(O < 0) or np.any(O > 1):
+            print("Invalid values in Observation Matrix (O):\n", O)
+
         return O
 
     def update(self, walls, belief, evidence, position):
@@ -177,6 +184,9 @@ class BeliefStateAgent(Agent):
                     for l in range(height):
                         predicted_belief[k, l] += T[i, j, k, l] * belief[i, j]
 
+        if np.any(predicted_belief < 0) or np.any(predicted_belief > 1):
+            print("Invalid values in predicted_belief:\n", predicted_belief)
+
         # Update the belief state based on the observation model
         updated_belief = np.zeros_like(belief)
         for i in range(width):
@@ -185,6 +195,12 @@ class BeliefStateAgent(Agent):
 
         # Normalize the updated belief state
         total_belief = np.sum(updated_belief)
+        # After calculating total_belief
+        if total_belief <= 0:
+            print("Invalid total_belief value:", total_belief)
+            print("updated_belief before normalization:\n", updated_belief)
+
+
         if total_belief > 0:
             updated_belief /= total_belief
 
