@@ -78,16 +78,17 @@ class BeliefStateAgent(Agent):
                 for idx, (new_x, new_y) in enumerate(valid_moves):
                     new_distance = manhattanDistance((new_x, new_y), position)
                     current_distance = manhattanDistance((i, j), position)
+                    distance_diff = new_distance - current_distance
 
-                    if self.ghost == 'afraid' or self.ghost == 'terrified':
-                        # Higher probability for increasing distance
-                        distance_diff = new_distance - current_distance
-                        scaling_factor = 1.0  # Adjust the scaling factor as needed
-                        prob_distribution[idx] = np.exp(scaling_factor * distance_diff)                    
+                    if self.ghost == 'afraid':
+                        scaling_factor = 1.25
+                    elif self.ghost == 'terrified':
+                        scaling_factor = 2
                     else:
-                        # Equal probability for Fearless ghost
-                        prob_distribution[idx] = 1
+                        scaling_factor = 1
 
+                    prob_distribution[idx] = np.exp(scaling_factor *
+                                                    distance_diff)
                 # Normalize the probabilities
                 if np.sum(prob_distribution) > 0:
                     prob_distribution /= np.sum(prob_distribution)
@@ -199,7 +200,6 @@ class BeliefStateAgent(Agent):
         if total_belief <= 0:
             print("Invalid total_belief value:", total_belief)
             print("updated_belief before normalization:\n", updated_belief)
-
 
         if total_belief > 0:
             updated_belief /= total_belief
