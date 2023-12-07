@@ -35,7 +35,7 @@ def key(state):
         tuple(state.getGhostPositions()),
     )
 
-def heuristic(state, belief_states):
+def heuristic(state, belief_states, walls): # TODO - ADD WALLS management
     """
     Heuristic based on belief states and distance to the most likely ghost position.
     """
@@ -278,13 +278,13 @@ class PacmanAgent(Agent):
         self.saved_moves = []
         self.last_target_zone = None
 
-    def astar(self, start_state, walls, beliefs):
+    def astar(self, start_state, ghost_position, walls, beliefs): # TODO deal with ghost-position
         """
         Perform A* search algorithm, considering walls and belief states.
         """
         fringe = PriorityQueue()
-        # Use an updated heuristic that considers the belief states and walls
-        fringe.push((start_state, []), self.updated_heuristic(start_state, beliefs, walls))
+        # Use a heuristic that considers the belief states and walls
+        fringe.push((start_state, []), self.heuristic(start_state, beliefs, walls))
         closed = set()
 
         while not fringe.isEmpty():
@@ -303,7 +303,7 @@ class PacmanAgent(Agent):
             for successor, action in current_state.generatePacmanSuccessors():
                 new_path = path + [action]
                 g_cost = len(new_path)
-                h_cost = self.updated_heuristic(successor, beliefs, walls)
+                h_cost = self.heuristic(successor, beliefs, walls)
                 f_cost = g_cost + h_cost
 
                 successor_key = key(successor)
