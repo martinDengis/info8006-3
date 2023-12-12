@@ -278,19 +278,40 @@ class PacmanAgent(Agent):
         self.saved_moves = []
         self.last_target_zone = None
 
-    def astar(self, start_state, ghost_position, walls, beliefs): # TODO deal with ghost-position
+    def heuristic(state, belief_states, walls): # TODO - ADD WALLS management
+        """
+        Heuristic based on belief states and distance to the most likely ghost position.
+        """
+        pos = state.getPacmanPosition()
+        max_belief = 0
+        likely_ghost_pos = None
+
+        # Find the most likely ghost position based on belief states
+        for ghost_pos, belief in np.ndenumerate(belief_states):
+            if belief > max_belief:
+                max_belief = belief
+                likely_ghost_pos = ghost_pos
+
+        # Use Manhattan distance to the most likely ghost position as the heuristic
+        if likely_ghost_pos:
+            return manhattanDistance(pos, likely_ghost_pos)
+        else:
+            return 0
+    
+    def astar(self, start_state, ghost_position, walls, beliefs):
         """
         Perform A* search algorithm, considering walls and belief states.
         """
         fringe = PriorityQueue()
-        # Use a heuristic that considers the belief states and walls
-        fringe.push((start_state, []), self.heuristic(start_state, beliefs, walls))
+        pacman_position = start_state.getPacmanPosition()  # Get the current position from the state
+        fringe.push((start_state, []), self.heuristic(pacman_position, beliefs, walls))
         closed = set()
 
         while not fringe.isEmpty():
             current_state, path = fringe.pop()
+            current_position = current_state.getPacmanPosition()  # Get the current position from the state
 
-            if current_state.isWin():
+            if current_position == ghost_position:  # Check if the goal is reached
                 return path
 
             state_key = key(current_state)
@@ -303,7 +324,7 @@ class PacmanAgent(Agent):
             for successor, action in current_state.generatePacmanSuccessors():
                 new_path = path + [action]
                 g_cost = len(new_path)
-                h_cost = self.heuristic(successor, beliefs, walls)
+                h_cost = self.heuristic(successor.getPacmanPosition(), beliefs, walls)  # Pass the position, not the state
                 f_cost = g_cost + h_cost
 
                 successor_key = key(successor)
@@ -312,6 +333,7 @@ class PacmanAgent(Agent):
                     closed[successor_key] = f_cost
 
         return []
+
 
     def is_ghost_reached(self, state):
         """
