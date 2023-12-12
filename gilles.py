@@ -1,7 +1,8 @@
 import numpy as np
+import heapq
 
 from pacman_module.game import Agent, Directions, manhattanDistance
-from pacman_module.util import Queue, PriorityQueue
+from pacman_module.util import Queue
 
 
 def binomial_coefficient(n, k):
@@ -30,30 +31,19 @@ def key(state):
     """
     Returns a key that uniquely identifies a Pacman game state.
     """
+    if isinstance(state, tuple):  # Check if it's a position tuple
+        return state
     return (
         state.getPacmanPosition(),
         tuple(state.getGhostPositions()),
     )
 
-def heuristic(state, belief_states, walls): # TODO - ADD WALLS management
-    """
-    Heuristic based on belief states and distance to the most likely ghost position.
-    """
-    pos = state.getPacmanPosition()
-    max_belief = 0
-    likely_ghost_pos = None
 
-    # Find the most likely ghost position based on belief states
-    for ghost_pos, belief in np.ndenumerate(belief_states):
-        if belief > max_belief:
-            max_belief = belief
-            likely_ghost_pos = ghost_pos
-
-    # Use Manhattan distance to the most likely ghost position as the heuristic
-    if likely_ghost_pos:
-        return manhattanDistance(pos, likely_ghost_pos)
-    else:
-        return 0
+def key_from_position(position):
+    """
+    Returns a key that uniquely identifies a position.
+    """
+    return position
 
 class BeliefStateAgent(Agent):
     """Belief state agent.
@@ -278,62 +268,92 @@ class PacmanAgent(Agent):
         self.saved_moves = []
         self.last_target_zone = None
 
-    def heuristic(state, belief_states, walls): # TODO - ADD WALLS management
+    def heuristic(self, pacman_position, beliefs, walls):
         """
-        Heuristic based on belief states and distance to the most likely ghost position.
+        Heuristic function that considers walls.
         """
-        pos = state.getPacmanPosition()
         max_belief = 0
         likely_ghost_pos = None
 
         # Find the most likely ghost position based on belief states
-        for ghost_pos, belief in np.ndenumerate(belief_states):
+        for ghost_pos, belief in np.ndenumerate(beliefs):
             if belief > max_belief:
                 max_belief = belief
                 likely_ghost_pos = ghost_pos
 
-        # Use Manhattan distance to the most likely ghost position as the heuristic
         if likely_ghost_pos:
-            return manhattanDistance(pos, likely_ghost_pos)
+            return self.modified_manhattan_distance(pacman_position, likely_ghost_pos, walls)
         else:
             return 0
+
+    def modified_manhattan_distance(self, start, end, walls):
+        """
+        Calculate a modified Manhattan distance that adds penalties for walls.
+        """
+        dx, dy = abs(start[0] - end[0]), abs(start[1] - end[1])
+        distance = dx + dy
+
+        wall_penalty = 0
+        if dx != 0 and dy != 0:  # Check if the path is not straight
+            # Check horizontal and vertical paths for walls
+            for x in range(min(start[0], end[0]), max(start[0], end[0]) + 1):
+                if x < walls.width and walls[x][start[1]]:  # Check boundary
+                    wall_penalty += 1
+            for y in range(min(start[1], end[1]), max(start[1], end[1]) + 1):
+                if y < walls.height and walls[start[0]][y]:  # Check boundary
+                    wall_penalty += 1
+
+        return distance + wall_penalty
     
-    def astar(self, start_state, ghost_position, walls, beliefs):
+    def astar(self, pacman_position, ghost_position, walls, beliefs):
         """
         Perform A* search algorithm, considering walls and belief states.
         """
-        fringe = PriorityQueue()
-        pacman_position = start_state.getPacmanPosition()  # Get the current position from the state
-        fringe.push((start_state, []), self.heuristic(pacman_position, beliefs, walls))
-        closed = set()
+        fringe = []
+        heapq.heappush(fringe, (self.heuristic(pacman_position, beliefs, walls), (pacman_position, [])))
+        closed = {}
 
-        while not fringe.isEmpty():
-            current_state, path = fringe.pop()
-            current_position = current_state.getPacmanPosition()  # Get the current position from the state
+        while fringe:
+            _, (current_position, path) = heapq.heappop(fringe)
 
-            if current_position == ghost_position:  # Check if the goal is reached
+            if current_position == ghost_position:
                 return path
 
-            state_key = key(current_state)
-
-            if state_key in closed:
+            if current_position in closed:
                 continue
 
-            closed.add(state_key)
+            closed[current_position] = len(path)
 
-            for successor, action in current_state.generatePacmanSuccessors():
+            # Generate successors based on current_position
+            for successor_position, action in self.generate_successors(current_position, walls):
                 new_path = path + [action]
                 g_cost = len(new_path)
-                h_cost = self.heuristic(successor.getPacmanPosition(), beliefs, walls)  # Pass the position, not the state
+                h_cost = self.heuristic(successor_position, beliefs, walls)
                 f_cost = g_cost + h_cost
 
-                successor_key = key(successor)
-                if successor_key not in closed or f_cost < closed[successor_key]:
-                    fringe.update((successor, new_path), f_cost)
-                    closed[successor_key] = f_cost
+                if successor_position not in closed or f_cost < closed[successor_position]:
+                    heapq.heappush(fringe, (f_cost, (successor_position, new_path)))
 
         return []
 
+    def generate_successors(self, position, walls):
+        """
+        Generate successors for the given position, considering walls.
+        """
+        successors = []
+        direction_deltas = {
+            Directions.NORTH: (0, 1),
+            Directions.SOUTH: (0, -1),
+            Directions.EAST: (1, 0),
+            Directions.WEST: (-1, 0)
+        }
+
+        for direction, (dx, dy) in direction_deltas.items():
+            new_position = (position[0] + dx, position[1] + dy)
+            if not walls[new_position[0]][new_position[1]]:
+                successors.append((new_position, direction))
+
+        return successors
 
     def is_ghost_reached(self, state):
         """
@@ -372,6 +392,7 @@ class PacmanAgent(Agent):
 
         # Check if direct move is possible or if A* pathfinding is needed
         if self.stopCount >= 5 or not self.is_legal_move(pacman_position, closest_ghost, walls):
+
             path = self.astar(pacman_position, closest_ghost, walls, beliefs)
             if path:
                 self.saved_moves = path
