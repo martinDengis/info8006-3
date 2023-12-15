@@ -353,19 +353,26 @@ class PacmanAgent(Agent):
         self.last_target_zone = target_zone
 
         # Check if we reached the threshold or three consecutive opposite moves
-        if self.stopCount >= 3 or (len(self.last_moves) == 6 and all(
-            self.is_opposite_move(self.last_moves[i],
-                                  self.last_moves[i - 1])
-                for i in range(1, 6))):
-                    if not self.saved_moves:
-                        # Compute new path + save the first 25 moves
-                        self.saved_moves = self.compute_path(
-                            pacman_position, walls, closest_ghost)[:25]
-                        if self.saved_moves:
-                            target_zone = self.saved_moves.pop(0)
-                        else:
-                            target_zone = self.choose_direction(
-                                pacman_position, walls)
+        is_consecutive_opposite = (
+            len(self.last_moves) == 6 and
+            all(
+                self.is_opposite_move(self.last_moves[i],
+                                      self.last_moves[i - 1])
+                for i in range(1, 6)
+            )
+        )
+
+        if self.stopCount >= 3 or is_consecutive_opposite:
+            if not self.saved_moves:
+                # Compute new path + save the first 25 moves
+                path = self.compute_path(
+                    pacman_position, walls, closest_ghost)
+                self.saved_moves = path[:25]
+                if self.saved_moves:
+                    target_zone = self.saved_moves.pop(0)
+                else:
+                    target_zone = self.choose_direction(
+                        pacman_position, walls)
 
         return target_zone
 
