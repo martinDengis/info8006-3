@@ -12,7 +12,7 @@ def binomial_coefficient(n, k):
         return 0
     if k == 0 or k == n:
         return 1
-    k = min(k, n - k)  # Take advantage of symmetry
+    k = min(k, n - k)
     coeff = 1
     for i in range(k):
         coeff *= n - i
@@ -249,8 +249,41 @@ class PacmanAgent(Agent):
         self.stopCount = 0
         self.saved_moves = []
         self.last_target_zone = None
+        self.last_moves = []
+
+    def is_opposite_move(self, move1, move2):
+        """
+        Determines if two moves are opposite to each other.
+        """
+        opposite_moves = {
+            Directions.NORTH: Directions.SOUTH,
+            Directions.SOUTH: Directions.NORTH,
+            Directions.EAST: Directions.WEST,
+            Directions.WEST: Directions.EAST
+        }
+        return opposite_moves.get(move1) == move2
 
     def identify_target_zone(self, beliefs, eaten, walls, pacman_position):
+        """
+        Identifies the target zone for Pacman based on ghost beliefs.
+
+        This method determines the next move for Pacman based on the positions
+        of ghosts that have not been eaten. It prioritizes the closest ghost
+        based on the current belief states. If Pacman has saved moves,
+        these are used first. Otherwise, it calculates the best direction to
+        move towards the nearest ghost. The method also handles conditions
+        where Pacman makes repeated or opposite moves and adjusts the strategy
+        accordingly.
+
+        Arguments:
+            beliefs: List of belief states about the positions of each ghost.
+            eaten: List of booleans indicating if each ghost has been eaten.
+            walls: The W x H grid of walls in the game.
+            pacman_position: The current position (x, y) of Pacman.
+
+        Returns:
+            The determined target zone for Pacman to move towards.
+        """
         if self.saved_moves:
             # If saved moves are available, use them
             self.stopCount = 0
@@ -303,19 +336,43 @@ class PacmanAgent(Agent):
             self.stopCount = 0  # Reset the counter if the target_zone changes
             self.last_target_zone = target_zone
 
-        if self.stopCount == 5:
-            if not self.saved_moves:
-                # If no saved moves, compute new path + save the first 25 moves
-                self.saved_moves = self.compute_path(
-                    pacman_position, walls, closest_ghost)[:25]
-                if self.saved_moves:
-                    target_zone = self.saved_moves.pop(0)
-                else:
-                    target_zone = self.choose_direction(pacman_position, walls)
+        if (self.last_moves and
+                self.is_opposite_move(target_zone, self.last_moves[-1])):
+            self.last_moves.append(target_zone)
+            if len(self.last_moves) > 6:
+                self.last_moves.pop(0)
+        else:
+            self.last_moves = [target_zone]
+
+        # Check for repeated or opposite moves
+        if target_zone == self.last_target_zone:
+            self.stopCount += 1
+        else:
+            self.stopCount = 0
+
+        self.last_target_zone = target_zone
+
+        # Check if we reached the threshold or three consecutive opposite moves
+        if self.stopCount >= 3 or (len(self.last_moves) == 6 and all(
+            self.is_opposite_move(self.last_moves[i],
+                                  self.last_moves[i - 1])
+                for i in range(1, 6))):
+                    if not self.saved_moves:
+                        # Compute new path + save the first 25 moves
+                        self.saved_moves = self.compute_path(
+                            pacman_position, walls, closest_ghost)[:25]
+                        if self.saved_moves:
+                            target_zone = self.saved_moves.pop(0)
+                        else:
+                            target_zone = self.choose_direction(
+                                pacman_position, walls)
 
         return target_zone
 
     def is_legal_move(self, position, action, walls):
+        """
+        Checks if a move is legal based on the game's walls and layout.
+        """
         # Calculate new position based on action
         direction_deltas = {
             Directions.NORTH: (0, 1),
@@ -334,6 +391,9 @@ class PacmanAgent(Agent):
         return False
 
     def choose_direction(self, position, walls):
+        """
+        Chooses a legal direction for Pacman to move.
+        """
         possible_actions = [Directions.NORTH, Directions.SOUTH,
                             Directions.EAST, Directions.WEST]
         for action in possible_actions:

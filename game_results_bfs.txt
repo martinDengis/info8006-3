@@ -1,150 +1,150 @@
 Configuration: Ghost Type: afraid, Number of Ghosts: 1, Layout: large_filter
 Running command: python run.py --ghost afraid --nghosts 1 --visible --layout large_filter --seed 42
 Score: 658
-Computation time: 1.036046028137207
+Computation time: 1.5392301082611084
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 2, Layout: large_filter
 Running command: python run.py --ghost afraid --nghosts 2 --visible --layout large_filter --seed 42
 Score: 880
-Computation time: 0.9088387489318848
+Computation time: 1.2505404949188232
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 3, Layout: large_filter
 Running command: python run.py --ghost afraid --nghosts 3 --visible --layout large_filter --seed 42
 Score: 1055
-Computation time: 2.6490225791931152
+Computation time: 3.1615259647369385
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 4, Layout: large_filter
 Running command: python run.py --ghost afraid --nghosts 4 --visible --layout large_filter --seed 42
 Score: 1208
-Computation time: 5.462869882583618
+Computation time: 7.043655872344971
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 5, Layout: large_filter
 Running command: python run.py --ghost afraid --nghosts 5 --visible --layout large_filter --seed 42
 Score: 1395
-Computation time: 12.536958694458008
+Computation time: 14.891950607299805
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 1, Layout: large_filter_walls
 Running command: python run.py --ghost afraid --nghosts 1 --visible --layout large_filter_walls --seed 42
 Score: 682
-Computation time: 0.5078232288360596
+Computation time: 0.653998851776123
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 2, Layout: large_filter_walls
 Running command: python run.py --ghost afraid --nghosts 2 --visible --layout large_filter_walls --seed 42
-Score: 858
-Computation time: 2.0645132064819336
+Score: 869
+Computation time: 1.866051435470581
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 3, Layout: large_filter_walls
 Running command: python run.py --ghost afraid --nghosts 3 --visible --layout large_filter_walls --seed 42
-Score: 1051
-Computation time: 2.066779136657715
+Score: 1049
+Computation time: 2.7574095726013184
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 4, Layout: large_filter_walls
 Running command: python run.py --ghost afraid --nghosts 4 --visible --layout large_filter_walls --seed 42
-Score: 1185
-Computation time: 6.2027833461761475
+Score: 1199
+Computation time: 7.051099061965942
 
 Configuration: Ghost Type: afraid, Number of Ghosts: 5, Layout: large_filter_walls
 Running command: python run.py --ghost afraid --nghosts 5 --visible --layout large_filter_walls --seed 42
-Score: 1326
-Computation time: 24.819132804870605
+Score: 1309
+Computation time: 21.75748562812805
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 1, Layout: large_filter
 Running command: python run.py --ghost fearless --nghosts 1 --visible --layout large_filter --seed 42
 Score: 678
-Computation time: 0.6516525745391846
+Computation time: 0.7552816867828369
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 2, Layout: large_filter
 Running command: python run.py --ghost fearless --nghosts 2 --visible --layout large_filter --seed 42
 Score: 881
-Computation time: 1.0229425430297852
+Computation time: 1.2279720306396484
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 3, Layout: large_filter
 Running command: python run.py --ghost fearless --nghosts 3 --visible --layout large_filter --seed 42
 Score: 1062
-Computation time: 2.1389126777648926
+Computation time: 2.5304481983184814
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 4, Layout: large_filter
 Running command: python run.py --ghost fearless --nghosts 4 --visible --layout large_filter --seed 42
 Score: 1268
-Computation time: 3.014688491821289
+Computation time: 3.457726240158081
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 5, Layout: large_filter
 Running command: python run.py --ghost fearless --nghosts 5 --visible --layout large_filter --seed 42
 Score: 1450
-Computation time: 6.199700355529785
+Computation time: 7.9318249225616455
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 1, Layout: large_filter_walls
 Running command: python run.py --ghost fearless --nghosts 1 --visible --layout large_filter_walls --seed 42
 Score: 673
-Computation time: 0.7351596355438232
+Computation time: 0.9515364170074463
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 2, Layout: large_filter_walls
 Running command: python run.py --ghost fearless --nghosts 2 --visible --layout large_filter_walls --seed 42
 Score: 858
-Computation time: 1.4775691032409668
+Computation time: 1.7486917972564697
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 3, Layout: large_filter_walls
 Running command: python run.py --ghost fearless --nghosts 3 --visible --layout large_filter_walls --seed 42
-Score: 1005
-Computation time: 5.901570796966553
+Score: 926
+Computation time: 11.942167282104492
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 4, Layout: large_filter_walls
 Running command: python run.py --ghost fearless --nghosts 4 --visible --layout large_filter_walls --seed 42
-Score: 1199
-Computation time: 5.356541872024536
+Score: 1188
+Computation time: 6.669358968734741
 
 Configuration: Ghost Type: fearless, Number of Ghosts: 5, Layout: large_filter_walls
 Running command: python run.py --ghost fearless --nghosts 5 --visible --layout large_filter_walls --seed 42
-Score: 1425
-Computation time: 5.953533411026001
+Score: 1421
+Computation time: 7.026925086975098
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 1, Layout: large_filter
 Running command: python run.py --ghost terrified --nghosts 1 --visible --layout large_filter --seed 42
 Score: 672
-Computation time: 0.8319015502929688
+Computation time: 0.9693424701690674
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 2, Layout: large_filter
 Running command: python run.py --ghost terrified --nghosts 2 --visible --layout large_filter --seed 42
 Score: 836
-Computation time: 2.797640800476074
+Computation time: 3.324875831604004
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 3, Layout: large_filter
 Running command: python run.py --ghost terrified --nghosts 3 --visible --layout large_filter --seed 42
 Score: 1044
-Computation time: 3.4079885482788086
+Computation time: 4.277511119842529
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 4, Layout: large_filter
 Running command: python run.py --ghost terrified --nghosts 4 --visible --layout large_filter --seed 42
 Score: 1260
-Computation time: 3.778665542602539
+Computation time: 4.924831867218018
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 5, Layout: large_filter
 Running command: python run.py --ghost terrified --nghosts 5 --visible --layout large_filter --seed 42
 Score: 1448
-Computation time: 4.766757488250732
+Computation time: 5.643407821655273
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 1, Layout: large_filter_walls
 Running command: python run.py --ghost terrified --nghosts 1 --visible --layout large_filter_walls --seed 42
 Score: 682
-Computation time: 0.4954507350921631
+Computation time: 0.6620547771453857
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 2, Layout: large_filter_walls
 Running command: python run.py --ghost terrified --nghosts 2 --visible --layout large_filter_walls --seed 42
-Score: 807
-Computation time: 3.9893581867218018
+Score: 803
+Computation time: 4.616952180862427
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 3, Layout: large_filter_walls
 Running command: python run.py --ghost terrified --nghosts 3 --visible --layout large_filter_walls --seed 42
-Score: 1012
-Computation time: 4.300793170928955
+Score: 1005
+Computation time: 5.640536546707153
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 4, Layout: large_filter_walls
 Running command: python run.py --ghost terrified --nghosts 4 --visible --layout large_filter_walls --seed 42
-Score: 1160
-Computation time: 14.516518831253052
+Score: 1037
+Computation time: 19.871819257736206
 
 Configuration: Ghost Type: terrified, Number of Ghosts: 5, Layout: large_filter_walls
 Running command: python run.py --ghost terrified --nghosts 5 --visible --layout large_filter_walls --seed 42
 Score: 1418
-Computation time: 6.616485118865967
+Computation time: 7.4672839641571045
 
