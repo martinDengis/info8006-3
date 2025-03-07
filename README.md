@@ -25,11 +25,3 @@ To get started, download and extract the [archive](../project3.zip?raw=true) of 
 $ python run.py --ghost afraid --nghosts 1 --layout large_filter --seed 42
 ```
 When several ghosts are present in the maze, they all run the same policy (e.g. all `afraid`). The random seed of the game can be changed with the `--seed` option.
-
-## Evaluation
-
-Your project will be evaluated as follow:
-
-- **Bayes filter** : We evaluate the correctness of each component.
-- **Pacman controller**: We evaluate whether you agent is able to eat the ghosts.
-- **Code style** : No points are awarded if your code is not PEP-8 compliant.
